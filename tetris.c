@@ -1,30 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <sys/time.h>
-#include <ncurses.h>
-// #include <bool.h>
-
-#define Row 20
-#define Col 10
-#define True 1
-#define False 0
+#include "tetris.h"
 
 char Table[Row][Col] = {0};
 int final_score = 0;
-char GameOn = True;
+char GameOn = true;
 suseconds_t timer = 400000;
 int decrease = 1000;
+t_block current;
 
-typedef struct
-{
-	char **array;
-	int width, row, col;
-} Struct;
-
-Struct current;
-
-const Struct shape_types[7] = {
+const t_block block_types[7] = {
 		{(char *[]){(char[]){0, 1, 1}, (char[]){1, 1, 0}, (char[]){0, 0, 0}}, 3},
 		{(char *[]){(char[]){1, 1, 0}, (char[]){0, 1, 1}, (char[]){0, 0, 0}}, 3},
 		{(char *[]){(char[]){0, 1, 0}, (char[]){1, 1, 1}, (char[]){0, 0, 0}}, 3},
@@ -33,100 +16,68 @@ const Struct shape_types[7] = {
 		{(char *[]){(char[]){1, 1}, (char[]){1, 1}}, 2},
 		{(char *[]){(char[]){0, 0, 0, 0}, (char[]){1, 1, 1, 1}, (char[]){0, 0, 0, 0}, (char[]){0, 0, 0, 0}}, 4}};
 
-Struct malloc_copy_shape(Struct shape)
+t_block malloc_copy_block(t_block block)
 {
-	Struct new_shape = shape;
-	char **copyshape = shape.array;
-	new_shape.array = (char **)malloc(new_shape.width * sizeof(char *));
+	t_block new_block = block;
+	char **copyblock = block.array;
+	new_block.array = (char **)malloc(new_block.width * sizeof(char *));
 	int i, j;
-	for (i = 0; i < new_shape.width; i++)
+	for (i = 0; i < new_block.width; i++)
 	{
-		new_shape.array[i] = (char *)malloc(new_shape.width * sizeof(char));
-		for (j = 0; j < new_shape.width; j++)
+		new_block.array[i] = (char *)malloc(new_block.width * sizeof(char));
+		for (j = 0; j < new_block.width; j++)
 		{
-			new_shape.array[i][j] = copyshape[i][j];
+			new_block.array[i][j] = copyblock[i][j];
 		}
 	}
-	return new_shape;
+	return new_block;
 }
 
-void free_shape(Struct shape)
+void free_block(t_block block)
 {
 	int i;
-	for (i = 0; i < shape.width; i++)
+	for (i = 0; i < block.width; i++)
 	{
-		free(shape.array[i]);
+		free(block.array[i]);
 	}
-	free(shape.array);
+	free(block.array);
 }
 
-int is_shape_placeable(Struct shape)
+int is_block_placeable(t_block block)
 {
-	char **array = shape.array;
+	char **array = block.array;
 	int i, j;
-	for (i = 0; i < shape.width; i++)
+	for (i = 0; i < block.width; i++)
 	{
-		for (j = 0; j < shape.width; j++)
+		for (j = 0; j < block.width; j++)
 		{
 			//
-			if ((shape.col + j < 0 || shape.col + j >= Col || shape.row + i >= Row))
+			if ((block.col + j < 0 || block.col + j >= Col || block.row + i >= Row))
 			{
 				if (array[i][j])
-					return False;
+					return false;
 			}
-			else if (Table[shape.row + i][shape.col + j] && array[i][j])
-				return False;
+			else if (Table[block.row + i][block.col + j] && array[i][j])
+				return false;
 		}
 	}
-	return True;
+	return true;
 }
 
-void to_left(Struct shape) // TODO：関数の名前
+void turn_block(t_block block)
 {
-	Struct temp = malloc_copy_shape(shape);
-	int i, j, width;
-
-	width = shape.width;
-	bool is_left_blank = true;
-	while (is_left_blank)
-	{
-		for (i = 0; i < width; i++)
-		{
-			if (shape.array[i][0])
-				is_left_blank = false;
-		}
-		if (is_left_blank)
-		{
-			for (i = 0; i < width; i++)
-				for (j = 0; j < width; j++)
-				{
-					if (j == width - 1)
-						shape.array[i][j] = 0;
-					else
-						shape.array[i][j] = temp.array[i][j + 1];
-				}
-		}
-		free_shape(temp);
-		temp = malloc_copy_shape(shape);
-	}
-}
-
-void turn_shape(Struct shape)
-{
-	Struct temp = malloc_copy_shape(shape);
+	t_block temp = malloc_copy_block(block);
 	int i, j, k, width;
-	width = shape.width;
+	width = block.width;
 
-	// TODO: 回し方を考える。今のだと、マップの端で回した時に回らない形があったり、回り方が不自然なところがある。
 	for (i = 0; i < width; i++)
 	{
 		for (j = 0, k = width - 1; j < width; j++, k--)
 		{
-			shape.array[i][j] = temp.array[k][i];
+			block.array[i][j] = temp.array[k][i];
 		}
 	}
-	free_shape(temp);
-	to_left(shape);
+	free_block(temp);
 }
 
 void draw_map()
@@ -176,26 +127,26 @@ int main()
 	initscr();
 	gettimeofday(&before_now, NULL);
 	set_timeout(1);
-	Struct new_shape = malloc_copy_shape(shape_types[rand() % 7]);
-	new_shape.col = rand() % (Col - new_shape.width + 1);
-	new_shape.row = 0;
-	free_shape(current);
-	current = new_shape;
-	if (!is_shape_placeable(current))
+	t_block new_block = malloc_copy_block(block_types[rand() % 7]);
+	new_block.col = rand() % (Col - new_block.width + 1);
+	new_block.row = 0;
+	free_block(current);
+	current = new_block;
+	if (!is_block_placeable(current))
 	{
-		GameOn = False;
+		GameOn = false;
 	}
 	draw_map();
 	while (GameOn)
 	{
 		if ((c = getch()) != ERR)
 		{
-			Struct temp = malloc_copy_shape(current);
+			t_block temp = malloc_copy_block(current);
 			switch (c)
 			{
 			case 's':
 				temp.row++; // move down
-				if (is_shape_placeable(temp))
+				if (is_block_placeable(temp))
 					current.row++;
 				else
 				{
@@ -231,48 +182,48 @@ int main()
 						}
 					}
 					final_score += 100 * count;
-					Struct new_shape = malloc_copy_shape(shape_types[rand() % 7]);
-					new_shape.col = rand() % (Col - new_shape.width + 1);
-					new_shape.row = 0;
-					free_shape(current);
-					current = new_shape;
-					if (!is_shape_placeable(current))
+					t_block new_block = malloc_copy_block(block_types[rand() % 7]);
+					new_block.col = rand() % (Col - new_block.width + 1);
+					new_block.row = 0;
+					free_block(current);
+					current = new_block;
+					if (!is_block_placeable(current))
 					{
-						GameOn = False;
+						GameOn = false;
 					}
 				}
 				break;
 			case 'd':
 				// to right
 				temp.col++;
-				if (is_shape_placeable(temp))
+				if (is_block_placeable(temp))
 					current.col++;
 				break;
 			case 'a':
 				// to left
 				temp.col--;
-				if (is_shape_placeable(temp))
+				if (is_block_placeable(temp))
 					current.col--;
 				break;
 			case 'w':
 				// turn
-				turn_shape(temp);
-				if (is_shape_placeable(temp))
-					turn_shape(current);
+				turn_block(temp);
+				if (is_block_placeable(temp))
+					turn_block(current);
 				break;
 			}
-			free_shape(temp);
+			free_block(temp);
 			draw_map();
 		}
 		gettimeofday(&now, NULL);
 		if (hasToUpdate())
 		{
-			Struct temp = malloc_copy_shape(current);
+			t_block temp = malloc_copy_block(current);
 			switch ('s')
 			{
 			case 's':
 				temp.row++;
-				if (is_shape_placeable(temp))
+				if (is_block_placeable(temp))
 					current.row++;
 				else
 				{
@@ -305,39 +256,39 @@ int main()
 							timer -= decrease--;
 						}
 					}
-					Struct new_shape = malloc_copy_shape(shape_types[rand() % 7]);
-					new_shape.col = rand() % (Col - new_shape.width + 1);
-					new_shape.row = 0;
-					free_shape(current);
-					current = new_shape;
-					if (!is_shape_placeable(current))
+					t_block new_block = malloc_copy_block(block_types[rand() % 7]);
+					new_block.col = rand() % (Col - new_block.width + 1);
+					new_block.row = 0;
+					free_block(current);
+					current = new_block;
+					if (!is_block_placeable(current))
 					{
-						GameOn = False;
+						GameOn = false;
 					}
 				}
 				break;
 			case 'd':
 				temp.col++;
-				if (is_shape_placeable(temp))
+				if (is_block_placeable(temp))
 					current.col++;
 				break;
 			case 'a':
 				temp.col--;
-				if (is_shape_placeable(temp))
+				if (is_block_placeable(temp))
 					current.col--;
 				break;
 			case 'w':
-				turn_shape(temp);
-				if (is_shape_placeable(temp))
-					turn_shape(current);
+				turn_block(temp);
+				if (is_block_placeable(temp))
+					turn_block(current);
 				break;
 			}
-			free_shape(temp);
+			free_block(temp);
 			draw_map();
 			gettimeofday(&before_now, NULL);
 		}
 	}
-	free_shape(current);
+	free_block(current);
 	endwin();
 	int i, j;
 	for (i = 0; i < Row; i++)
