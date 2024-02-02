@@ -4,7 +4,7 @@ MKDIR		= mkdir -p
 
 CCFLAGS = -Wall -Werror -Wextra
 
-SRCS    = tetris.c
+SRCS    = tetris.c globals.c block_operations.c drawing.c game_logic.c
 
 NAME    = tetris
 
