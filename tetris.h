@@ -22,4 +22,5 @@ typedef struct s_block
 	int width, row, col;
 }	t_block;
 
+
 #	endif

@@ -37,9 +37,7 @@ void free_block(t_block block)
 {
 	int i;
 	for (i = 0; i < block.width; i++)
-	{
 		free(block.array[i]);
-	}
 	free(block.array);
 }
 
@@ -119,6 +117,83 @@ void set_timeout(int time)
 	timeout(1);
 }
 
+void move_block(char c)
+{
+	t_block temp = malloc_copy_block(current);
+	switch (c)
+	{
+	case 's':
+		temp.row++; // move down
+		if (is_block_placeable(temp))
+			current.row++;
+		else
+		{
+			int i, j;
+			for (i = 0; i < current.width; i++)
+			{
+				for (j = 0; j < current.width; j++)
+				{
+					if (current.array[i][j])
+						Table[current.row + i][current.col + j] = current.array[i][j];
+				}
+			}
+			int n, m, sum, count = 0;
+			// TODO: おいたところだけの判定で良い ✅
+			for (n = current.row; n < current.row + current.width; n++)
+			{
+				sum = 0;
+				for (m = 0; m < Col; m++)
+				{
+					sum += Table[n][m];
+				}
+				if (sum == Col)
+				{
+					// decrease level of map
+					count++;
+					int l, k;
+					for (k = n; k >= 1; k--)
+						for (l = 0; l < Col; l++)
+							Table[k][l] = Table[k - 1][l];
+					for (l = 0; l < Col; l++)
+						Table[k][l] = 0;
+					timer -= decrease--;
+				}
+			}
+			final_score += 100 * count;
+			t_block new_block = malloc_copy_block(block_types[rand() % 7]);
+			new_block.col = rand() % (Col - new_block.width + 1);
+			new_block.row = 0;
+			free_block(current);
+			current = new_block;
+			if (!is_block_placeable(current))
+			{
+				GameOn = false;
+			}
+		}
+		break;
+	case 'd':
+		// to right
+		temp.col++;
+		if (is_block_placeable(temp))
+			current.col++;
+		break;
+	case 'a':
+		// to left
+		temp.col--;
+		if (is_block_placeable(temp))
+			current.col--;
+		break;
+	case 'w':
+		// turn
+		turn_block(temp);
+		if (is_block_placeable(temp))
+			turn_block(current);
+		break;
+	}
+	free_block(temp);
+	draw_map();
+}
+
 int main()
 {
 	srand(time(0));
@@ -140,151 +215,12 @@ int main()
 	while (GameOn)
 	{
 		if ((c = getch()) != ERR)
-		{
-			t_block temp = malloc_copy_block(current);
-			switch (c)
-			{
-			case 's':
-				temp.row++; // move down
-				if (is_block_placeable(temp))
-					current.row++;
-				else
-				{
-					int i, j;
-					for (i = 0; i < current.width; i++)
-					{
-						for (j = 0; j < current.width; j++)
-						{
-							if (current.array[i][j])
-								Table[current.row + i][current.col + j] = current.array[i][j];
-						}
-					}
-					int n, m, sum, count = 0;
-					// TODO: おいたところだけの判定で良い ✅
-					for (n = current.row; n < current.row + current.width; n++)
-					{
-						sum = 0;
-						for (m = 0; m < Col; m++)
-						{
-							sum += Table[n][m];
-						}
-						if (sum == Col)
-						{
-							// decrease level of map
-							count++;
-							int l, k;
-							for (k = n; k >= 1; k--)
-								for (l = 0; l < Col; l++)
-									Table[k][l] = Table[k - 1][l];
-							for (l = 0; l < Col; l++)
-								Table[k][l] = 0;
-							timer -= decrease--;
-						}
-					}
-					final_score += 100 * count;
-					t_block new_block = malloc_copy_block(block_types[rand() % 7]);
-					new_block.col = rand() % (Col - new_block.width + 1);
-					new_block.row = 0;
-					free_block(current);
-					current = new_block;
-					if (!is_block_placeable(current))
-					{
-						GameOn = false;
-					}
-				}
-				break;
-			case 'd':
-				// to right
-				temp.col++;
-				if (is_block_placeable(temp))
-					current.col++;
-				break;
-			case 'a':
-				// to left
-				temp.col--;
-				if (is_block_placeable(temp))
-					current.col--;
-				break;
-			case 'w':
-				// turn
-				turn_block(temp);
-				if (is_block_placeable(temp))
-					turn_block(current);
-				break;
-			}
-			free_block(temp);
-			draw_map();
-		}
+			move_block(c);
 		gettimeofday(&now, NULL);
+		// 最後に動かした時間から0.4秒経過したら、ブロックを下に動かす
 		if (hasToUpdate())
 		{
-			t_block temp = malloc_copy_block(current);
-			switch ('s')
-			{
-			case 's':
-				temp.row++;
-				if (is_block_placeable(temp))
-					current.row++;
-				else
-				{
-					int i, j;
-					for (i = 0; i < current.width; i++)
-					{
-						for (j = 0; j < current.width; j++)
-						{
-							if (current.array[i][j])
-								Table[current.row + i][current.col + j] = current.array[i][j];
-						}
-					}
-					int n, m, sum, count = 0;
-					for (n = 0; n < Row; n++)
-					{
-						sum = 0;
-						for (m = 0; m < Col; m++)
-						{
-							sum += Table[n][m];
-						}
-						if (sum == Col)
-						{
-							count++;
-							int l, k;
-							for (k = n; k >= 1; k--)
-								for (l = 0; l < Col; l++)
-									Table[k][l] = Table[k - 1][l];
-							for (l = 0; l < Col; l++)
-								Table[k][l] = 0;
-							timer -= decrease--;
-						}
-					}
-					t_block new_block = malloc_copy_block(block_types[rand() % 7]);
-					new_block.col = rand() % (Col - new_block.width + 1);
-					new_block.row = 0;
-					free_block(current);
-					current = new_block;
-					if (!is_block_placeable(current))
-					{
-						GameOn = false;
-					}
-				}
-				break;
-			case 'd':
-				temp.col++;
-				if (is_block_placeable(temp))
-					current.col++;
-				break;
-			case 'a':
-				temp.col--;
-				if (is_block_placeable(temp))
-					current.col--;
-				break;
-			case 'w':
-				turn_block(temp);
-				if (is_block_placeable(temp))
-					turn_block(current);
-				break;
-			}
-			free_block(temp);
-			draw_map();
+			move_block('s');
 			gettimeofday(&before_now, NULL);
 		}
 	}
