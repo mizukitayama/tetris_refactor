@@ -2,6 +2,8 @@ CC      = cc
 RM      = rm -rf
 MKDIR		= mkdir -p
 
+CCFLAGS = -Wall -Werror -Wextra
+
 SRCS    = tetris.c
 
 NAME    = tetris

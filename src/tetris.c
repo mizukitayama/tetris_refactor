@@ -63,14 +63,14 @@ void turn_block(t_block block)
 
 void draw_map()
 {
-	char Buffer[ROW][COL] = {0};
+	char block_on_map[ROW][COL] = {0};
 	int i, j;
 	for (i = 0; i < current_block.width; i++)
 	{
 		for (j = 0; j < current_block.width; j++)
 		{
 			if (current_block.array[i][j])
-				Buffer[current_block.row + i][current_block.col + j] = current_block.array[i][j];
+				block_on_map[current_block.row + i][current_block.col + j] = current_block.array[i][j];
 		}
 	}
 	clear();
@@ -81,7 +81,7 @@ void draw_map()
 	{
 		for (j = 0; j < COL; j++)
 		{
-			printw("%c ", (game_table[i][j] + Buffer[i][j]) ? BLOCK : BLANK);
+			printw("%c ", (game_table[i][j] + block_on_map[i][j]) ? BLOCK : BLANK);
 		}
 		printw("\n");
 	}
@@ -135,13 +135,13 @@ void check_and_clear_full_rows()
 	}
 }
 
-void move_block(char c)
+void move_block(int c)
 {
 	t_block temp = malloc_copy_block(current_block);
 	switch (c)
 	{
 	case DOWN_KEY:
-		temp.row++; // move down
+		temp.row++; // 下に移動
 		if (is_block_placeable(temp))
 			current_block.row++;
 		else
@@ -159,19 +159,19 @@ void move_block(char c)
 		}
 		break;
 	case RIGHT_KEY:
-		// to right
+		// 右に移動
 		temp.col++;
 		if (is_block_placeable(temp))
 			current_block.col++;
 		break;
 	case LEFT_KEY:
-		// to left
+		// 左に移動
 		temp.col--;
 		if (is_block_placeable(temp))
 			current_block.col--;
 		break;
 	case TURN_KEY:
-		// turn
+		// 回転
 		turn_block(temp);
 		if (is_block_placeable(temp))
 			turn_block(current_block);
@@ -184,7 +184,7 @@ void move_block(char c)
 void end_game()
 {
 	endwin();
-	int i, j;
+	size_t i, j;
 	for (i = 0; i < ROW; i++)
 	{
 		for (j = 0; j < COL; j++)
