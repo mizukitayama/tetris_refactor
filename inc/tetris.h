@@ -12,6 +12,8 @@
 #define ROW 20
 #define COL 8
 
+#define SCORE			100
+
 #define BLOCK				'#'
 #define BLANK				'.'
 
@@ -25,14 +27,13 @@
 
 #define BLOCK_NUMS	7
 
-#define SCORE			100
-
 
 typedef struct s_block
 {
 	char **array;
 	int width, row, col;
 }	t_block;
+
 
 const t_block block_types[BLOCK_NUMS] = {
 		{(char *[]){(char[]){0, 1, 1},
@@ -70,7 +71,6 @@ bool				game_on = true;
 suseconds_t	auto_drop_timer = 400000;
 int					timer_decrease = 1000;
 t_block			current_block;
-
-void	end_game();
+struct			timeval before_now, now;
 
 #	endif
