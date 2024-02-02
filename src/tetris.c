@@ -26,6 +26,7 @@ void free_block(t_block block)
 }
 
 int is_block_placeable(t_block block)
+/* ブロックが枠外に置かれないか、すでに置かれている場所では無いかをみる */
 {
 	char **array = block.array;
 	int i, j;
@@ -33,12 +34,11 @@ int is_block_placeable(t_block block)
 	{
 		for (j = 0; j < block.width; j++)
 		{
-			if ((block.col + j < 0 || block.col + j >= COL || block.row + i >= ROW))
-			{
-				if (array[i][j])
-					return false;
-			}
-			else if (game_table[block.row + i][block.col + j] && array[i][j])
+			// ブロックが枠外にあるとき
+			if (array[i][j] && (block.col + j < 0 || block.col + j >= COL || block.row + i >= ROW))
+				return false;
+			// ブロックがすでに置かれているとき
+			else if (array[i][j] && game_table[block.row + i][block.col + j])
 				return false;
 		}
 	}
@@ -46,11 +46,11 @@ int is_block_placeable(t_block block)
 }
 
 void turn_block(t_block block)
+/* ブロックを右に回転する */
 {
 	t_block temp = malloc_copy_block(block);
 	int i, j, k, width;
 	width = block.width;
-
 	for (i = 0; i < width; i++)
 	{
 		for (j = 0, k = width - 1; j < width; j++, k--)
@@ -88,8 +88,8 @@ void draw_map()
 	printw("\nScore: %d\n", final_score);
 }
 
-struct timeval before_now, now;
-int hasToUpdate()
+int is_time_for_auto_update()
+
 {
 	return ((suseconds_t)(now.tv_sec * 1000000 + now.tv_usec) - ((suseconds_t)before_now.tv_sec * 1000000 + before_now.tv_usec)) > auto_drop_timer;
 }
@@ -222,7 +222,7 @@ int main()
 			move_block(c);
 		gettimeofday(&now, NULL);
 		// 最後に動かした時間から0.4秒経過したら、ブロックを下に動かす
-		if (hasToUpdate())
+		if (is_time_for_auto_update())
 		{
 			move_block(DOWN_KEY);
 			gettimeofday(&before_now, NULL);
