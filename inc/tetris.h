@@ -9,9 +9,9 @@
 #include <stdbool.h>
 
 
-#define ROW 20
-#define COL 8
-#define SCORE			100
+#define ROW 				20
+#define COL					8
+#define SCORE				100
 #define BLOCK				'#'
 #define BLANK				'.'
 #define RIGHT_KEY		'd'
